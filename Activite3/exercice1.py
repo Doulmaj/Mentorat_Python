@@ -53,21 +53,12 @@ class Complex() :
         result = Complex() 
         result.real = self.real + nb.real
         result.imaginary = self.imaginary + nb.imaginary
-        print(self.real)
-        print(self.imaginary)
-        print(nb.real)
-        print(nb.imaginary)
         return result
     
     def multiplyComplex(self,nb) : 
         result = Complex()
-        real = self.real*nb.real - self.imaginary*nb.imaginary 
-        imaginary =self.real*nb.imaginary +self.imaginary*nb.real
-        if imaginary >0 : 
-            inter = '+'
-        else : 
-            inter = ''
-        result.setComplex(f"{real}{inter}{imaginary}i")
+        result.real = self.real*nb.real - self.imaginary*nb.imaginary 
+        result.imaginary =self.real*nb.imaginary +self.imaginary*nb.real
         return result
 
     def module (self) : 
@@ -88,6 +79,7 @@ class Complex() :
         while not valid :
             if value == '' : 
                 test=checkComplex()
+                break
             else : 
                 test = checkComplex(value)
             valid = test[0]
