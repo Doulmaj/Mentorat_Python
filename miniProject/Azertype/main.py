@@ -7,19 +7,27 @@ import time
 import threading
 
 remainingTime = 60
-score = 0
+totalTime = 0
+score = 0 #Cette variable sera utilisé pour connaitre le nombre de caractères que l'utilisateur à trouver
 proposed = 0
-donnees = 0
+donnees:list [str] = []
 
 def checkChoice(): 
     global remainingTime
+    global totalTime
     if x.get() != 0 and x.get() != 1 : 
         messagebox.showinfo(title='Choix du jeu',message='Vous devez choisir une proposition entre "mots" et "phrase" ')
-        remainingTime = FALSE
+        remainingTime = 0
     elif x.get() == 0 : 
-        remainingTime = 60 #1 minute pour les mots
-    else :
-        remainingTime = 3 * 60 # 3 minutes pour les phrases
+        remainingTime = 60 #1 minute pour les mots      
+        totalTime = 1 #Pour indiquer une minute
+        chrono()
+    elif x.get() ==1 :
+        totalTime = remainingTime = 3 * 60 # 3 minutes pour les phrases
+        totalTime = 3 #Pour indiquer 3 minutes
+        chrono()
+    #Actualiser le temps après le choix utilisateur
+    timeLabel.config(text= f"Temps restant : {remainingTime//60 :02}:{remainingTime % 60 :02} ")
     return remainingTime
 
 
@@ -39,6 +47,10 @@ def chrono() :
         userEntry.config(state=DISABLED)
         userEntry.unbind("<Return>")
         startButton.config(state=ACTIVE)
+        #A la fin du jeu, on affiche le score
+        global totalTime
+        global score
+        scoreLabel.config(text=f"Votre score est de : {score/totalTime : .2f} CPR (Character Per Minute)  ")
 
 def getRessources() : 
     global donnees
@@ -46,32 +58,30 @@ def getRessources() :
         with open('ressources.json','r', encoding='utf-8') as ressources : 
             donnees = json.load(ressources)
             donnees = donnees[x.get()] # x.get() permet de choisir entre le tableau correspondant au choix utilisteur
-            return donnees
     except FileNotFoundError : 
-        donnees = False
+        donnees = []
         messagebox.showerror(title='ressources.json',message="Le fichier ressources.json n'a pas été trouvé ")
-        return donnees
     except json.JSONDecodeError : 
-        donnees = False
+        donnees = []
         messagebox.showerror(title='ressources.json',message="Echec dans la conversion du fichier")
-        return donnees
+    return donnees
 
 #La fonction qui permet verifier la saisi de l'utilisateur puis de proposer un nouvel élément 
 def proposeOneElement() : 
     global remainingTime
     global score
-    global proposed
     global donnees
-    if userEntry.get() == propositionLabel["text"] : 
-        score += 1
-    i = randint(0,len(donnees))
-    proposition = donnees[i]
-    propositionLabel.config(text=proposition)
-    userEntry.delete(0,END)
-    proposed += 1
-    scoreLabel.config(text= f"Votre score : {score}/{proposed}")
-    if(remainingTime<=0) : 
-        return
+    if (remainingTime > 0) : 
+        tabUserEntry = userEntry.get()
+        tabProposition = propositionLabel["text"]
+        minLength = min(len(tabUserEntry), len(tabProposition))
+        for cpt in range(minLength) : 
+            if tabProposition[cpt] == tabUserEntry[cpt] : 
+                score += 1
+        i = randint(0, len(donnees) - 1)
+        proposition = donnees[i]
+        propositionLabel.config(text=proposition)
+        userEntry.delete(0,END)
 
 def onGoingGame() : 
     global remainingTime
@@ -79,30 +89,29 @@ def onGoingGame() :
     if (verification == False): 
         return
     verification = getRessources()
-    if (verification == False) :
+    if (len(verification) == 0) :
         return
     #Gestion du début du jeu
-    global score
-    global proposed
-    global donnees
-    i = randint(0,len(donnees))
-    proposition = donnees[i]
-    propositionLabel.config(text=proposition)
-    proposed += 1
-    validationButton.config(state=ACTIVE)
-    startButton.config(state=DISABLED)
-    userEntry.config(state=NORMAL)
-    userEntry.bind("<Return>", lambda event: proposeOneElement())
-    scoreLabel.config(text= f"Votre score : {score}/{proposed}")
-    if(remainingTime<=0) : 
-        return
+    if (remainingTime >0):
+        score
+        global donnees
+        i = randint(0,len(donnees))
+        proposition = donnees[i]
+        propositionLabel.config(text=proposition)
+        validationButton.config(state=ACTIVE)
+        startButton.config(state=DISABLED)
+        userEntry.config(state=NORMAL)
+        userEntry.bind("<Return>", lambda event: proposeOneElement())
 
 def startGame() : 
     global remainingTime
+    global score
+    score = 0 #Réunitialisation du score
+    userEntry.delete(0,END)
+    scoreLabel.config(text="Votre score est en cours de calcul... ")
     try : 
         onGoingGame_thread = threading.Thread(target=onGoingGame)
         onGoingGame_thread.start()
-        chrono()
 
     except Exception as e  : 
         print("error : ",e)
@@ -137,7 +146,7 @@ mainFrame = Frame(window,
                   height= 0.9 * HEIGHT,
                   bg="red")
 mainFrame.pack_propagate(False) # Empêche la frame de redimensionner selon les widgets
-mainFrame.place( x = 0.25*WIDTH, y= 0.05 * HEIGHT )
+mainFrame.pack()
 
 headerFrame = Frame(mainFrame,
                     bg="white",
@@ -145,7 +154,7 @@ headerFrame = Frame(mainFrame,
                     height= HEADER_HEIGHT
                     )
 headerFrame.pack_propagate(False)
-headerFrame.place(x=0, y=0)
+headerFrame.pack()
 
 titleLabel = Label( headerFrame,
                    text='AZerType',
@@ -153,7 +162,7 @@ titleLabel = Label( headerFrame,
                    bg="white",
                    fg= color_primary
                    )
-titleLabel.place(relx=0.5, rely=0.2, anchor=CENTER) # relx=0.5 et rely=0.5 placent le centre du label au milieu de la Frame.
+titleLabel.pack(anchor=CENTER)
 
 title2Label = Label( headerFrame,
                     text="L'application pour écrire plus vite",
@@ -161,7 +170,7 @@ title2Label = Label( headerFrame,
                     bg= "white",
                     fg=color_secondary
                     )
-title2Label.place(relx=0.5, rely=0.45, anchor=CENTER)
+title2Label.pack(anchor=CENTER)
 
 title3Label = Label(headerFrame,
                     text= "Azertype est une application pour apprendre à écrire plus vite",
@@ -169,7 +178,7 @@ title3Label = Label(headerFrame,
                     bg= "white",
                     fg= color_secondary
                     )
-title3Label.place(relx=0.5, rely=0.7, anchor= CENTER)
+title3Label.pack(anchor=CENTER)
 
 bodyFrame = Frame(mainFrame,
                   bg=color_secondary,
@@ -179,7 +188,7 @@ bodyFrame = Frame(mainFrame,
                   pady=8
                   )
 bodyFrame.pack_propagate(False)
-bodyFrame.place(x=0, y=HEADER_HEIGHT)
+bodyFrame.pack()
 
 propLabel = Label(bodyFrame,
                   text="Choisissez votre option et tapez la proposition qui s'affiche dans le champ en-dessous",
@@ -246,13 +255,13 @@ userFrame = Frame(bodyFrame,
                   height= 27,
                   )
 userFrame.pack_propagate(False)
-userFrame.pack(padx= (3,3), pady=(15,10))
+userFrame.pack(padx= (0,1.5), pady=(10,10))
 
 userEntry = Entry(userFrame,
                   fg=color_primary,
                   bg="white",
                   font=(general_font, 15),
-                  width= int(0.07 * BODY_WIDTH),
+                  width= int(0.073 * BODY_WIDTH),
                   )
 userEntry.bind("<Return>", lambda event: proposeOneElement())
 
@@ -285,7 +294,7 @@ startButton = Button(bodyFrame,
 startButton.pack(pady= (10,10) ,anchor=CENTER)
 
 scoreLabel = Label(bodyFrame,
-                   text="Votre score : 0/0",
+                   text=f"Votre score est de : 0 CPM (Character Per Minute) ",
                    font=(general_font,11),
                    bg= color_secondary,
                    fg="white"
