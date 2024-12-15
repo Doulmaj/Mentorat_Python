@@ -4,3 +4,8 @@ GUI
 miniProject/Azertype/main_opt.py
 miniProject/Azertype/test.py
 miniProject/Azertype/__pycache__
+miniProject/notepad/__pycache__
+miniProject/notepad/tests
+miniProject/notepad/files/test.txt
+miniProject/notepad/files/test1.txt
+miniProject/notepad/files/test2.txt
