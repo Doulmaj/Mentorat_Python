@@ -3,17 +3,19 @@ from tkinter import ttk, messagebox, filedialog, simpledialog
 from pathlib import Path
 from Tab import Tab
 from datetime import datetime
+from tkinter import font
 
 
 class Window(): 
     
-    def __init__(self, generalFont = "Consolas", generalHeight = 11):
+    def __init__(self, windowManager):
         #Attributs
         self.root: Tk = Tk() 
         self.notebook: ttk.Notebook = ttk.Notebook(self.root)
         self.tabManagerList: list [Tab] = [] #liste des onglets ouverts
         self.firstCreation: bool = True #Variable pour savoir si c'est la première fois qu'on crée la fenêtre ou pas
-
+        self.windowManager = windowManager #Pour gérer les fenêtres
+        self.windowManager.windowList.append(self)
         #Paramètres de la fenêtre
         WIDTH = 900
         HEIGHT = 450
@@ -28,7 +30,7 @@ class Window():
         self.root.config(menu=menubar)
 
         #Menu fichier
-        fileMenu = Menu(menubar,tearoff=0,font=(generalFont,13))
+        fileMenu = Menu(menubar,tearoff=0,font=("Consolas",13))
         menubar.add_cascade(label="Fichier",menu=fileMenu)
         fileMenu.add_command(label="Nouvel Onglet", command=self.createTab, accelerator="Ctrl+T")
         fileMenu.add_command(label="Nouvel fenêtre", command=self.createWindow, accelerator="Ctrl+N") #Partie à revoir
@@ -40,7 +42,7 @@ class Window():
         fileMenu.add_command(label="Quitter", command=self.quitProgramm)
 
         #Menu modification
-        modificationMenu = Menu(menubar, tearoff=0, font=(generalFont,13))
+        modificationMenu = Menu(menubar, tearoff=0, font=("Consolas",13))
         menubar.add_cascade(label="Modifier", menu=modificationMenu)
         modificationMenu.add_command(label="Retour arrière", accelerator="Ctrl+Z", command=self.undo)
         modificationMenu.add_command(label="Retour avant", accelerator="Ctrl+Y", command=self.redo)
@@ -107,10 +109,20 @@ class Window():
             tabList = self.notebook.tabs() #mettre à jour la liste des onglets
             self.notebook.select(tabList[len(tabList)-2]) #Visualiser automatiquement, l'onglet qui a été crée
         self.firstCreation = False # Changer la valeur de firstCreation, quand on est pas à la première création de la fenêtre
+        # Mise à jour des combobox de l'onglet créé
+        try : 
+            fontFamily = self.windowManager.generalFont
+            fontHeight = self.windowManager.generalHeight
+            tab.familyBox.current(self.windowManager.fontValues.index(fontFamily)) #Mettre à jour la combobox de la police de l'onglet courant
+            tab.heightBox.current(self.windowManager.heightValues.index(str(fontHeight))) #Mettre à jour la combobox de la taille de l'onglet courant
+        except Exception as e : 
+            messagebox.showerror(title="Erreur", message="Une erreur est survenue lors du changement de police et de taille. Veuillez verifier votre console pour plus d'informations")
+            print(e)
+
     
     #Fonction permettant de créer une nouvelle fenêtre
-    def createWindow(self, event= None):
-        window = Window()
+    def createWindow(self ,event= None):
+        window = Window(self.windowManager)
 
     #Fonction permettant d'ouvrir un fichier et son contenu dans un nouvel onglet
     def openFile(self, event = None): 
@@ -181,6 +193,7 @@ class Window():
         for i in range(len(tabList)-2, -1, -1) :
             self.notebook.select(tabList[i])
             self.tabManagerList[i].close_tab()
+        self.windowManager.windowList.remove(self)
 
     #Fonction permettant de fermer le programme
     def quitProgramm(self, event =None):
@@ -345,3 +358,26 @@ class Window():
         actualTime = datetime.now() #Recupérer le temps actuel
         formatedTime = actualTime.strftime("%d-%m-%Y %H:%M:%S") #formaté le temps 
         contentArea.insert(INSERT, formatedTime) # Insertion à la position du curseur
+
+    #Fonction pour changer la police et la taille du texte dans toutes les fenêtres
+    def changeFont(self,fontFamily, fontHeight) : 
+        if fontFamily == self.windowManager.generalFont and fontHeight == self.windowManager.generalHeight :
+            return
+        else : 
+            #Changer les valeurs des polices et tailles générales
+            self.windowManager.generalFont = fontFamily
+            self.windowManager.generalHeight = fontHeight
+            #Parcourir toutes les fenêtres
+            for window in self.windowManager.windowList : 
+                #Mettre à jour rous les onglets de la fenêtre courante
+                for tab in window.tabManagerList : 
+                    newFont = font.Font(family=fontFamily, size=fontHeight)
+                    tab.contentArea.configure(font=newFont) #Changement de police et de taille pour la fenêtre courante
+                    #Mettre à jour le contenu des combobox
+                    try : 
+                        tab.familyBox.current(self.windowManager.fontValues.index(fontFamily)) #Mettre à jour la combobox de la police de l'onglet courant
+                        tab.heightBox.current(self.windowManager.heightValues.index(str(fontHeight))) #Mettre à jour la combobox de la taille de l'onglet courant
+                    except Exception as e : 
+                        messagebox.showerror(title="Erreur", message="Une erreur est survenue lors du changement de police et de taille. Veuillez verifier votre console pour plus d'informations")
+                        print(e)
+

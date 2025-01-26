@@ -1,0 +1,32 @@
+[
+    {
+        "catégorie": "Débutant",
+        "wpm_min": 0,
+        "wpm_max": 20,
+        "description": "Très lent, utilisateur novice ou en apprentissage."
+    },
+    {
+        "catégorie": "Intermédiaire",
+        "wpm_min": 20,
+        "wpm_max": 40,
+        "description": "Utilisateur avec une vitesse de frappe moyenne."
+    },
+    {
+        "catégorie": "Avancé",
+        "wpm_min": 40,
+        "wpm_max": 60,
+        "description": "Bonne vitesse, adapté à un usage professionnel standard."
+    },
+    {
+        "catégorie": "Expert",
+        "wpm_min": 60,
+        "wpm_max": 80,
+        "description": "Très rapide, souvent des secrétaires ou dactylographes."
+    },
+    {
+        "catégorie": "Maître / Pro",
+        "wpm_min": 80,
+        "wpm_max": 1000000,
+        "description": "Exceptionnel, souvent pour les compétitions ou usages intensifs."
+    }
+]

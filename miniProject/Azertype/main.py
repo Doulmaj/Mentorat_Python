@@ -10,6 +10,7 @@ remainingTime = 60
 totalTime = 0
 score = 0 #Cette variable sera utilisé pour connaitre le nombre de caractères que l'utilisateur à trouver
 proposed = 0
+classification = [] #Liste des classifications en fonction de la vitesse de l'utilisateur
 donnees:list [str] = []
 
 def checkChoice(): 
@@ -30,6 +31,16 @@ def checkChoice():
     timeLabel.config(text= f"Temps restant : {remainingTime//60 :02}:{remainingTime % 60 :02} ")
     return remainingTime
 
+#Pour vérifier si un nombre fait parti d'un intervalle
+def checkInIntervall(valMin,valeur , valMax) : 
+    return valMin <= valeur < valMax
+
+#Fonction pour connaitre le niveau de l'utilisateur
+def getUserLevel(): 
+    global classification
+    for level in classification : 
+        if checkInIntervall(level["wpm_min"], score / 5 * totalTime, level["wpm_max"]): 
+            return level
 
 def chrono() : 
     global remainingTime
@@ -50,17 +61,25 @@ def chrono() :
         #A la fin du jeu, on affiche le score
         global totalTime
         global score
-        scoreLabel.config(text=f"Votre score est de : {score/totalTime : .2f} CPR (Character Per Minute)  ")
+        scoreLabel.config(text=f"Votre score est de : {score/ 5*totalTime : .2f} WPM (Word Per Minute)  ")
+        userLevel = getUserLevel()
+        classificationLabel.config(text=f"Vous êtes au niveau : {userLevel['catégorie']}")
+        classificationDescrition.config(text=f"Description : {userLevel['description']}")
 
 def getRessources() : 
     global donnees
+    global classification
     try : 
         with open('ressources.json','r', encoding='utf-8') as ressources : 
             donnees = json.load(ressources)
             donnees = donnees[x.get()] # x.get() permet de choisir entre le tableau correspondant au choix utilisteur
+
+        with open('classification.json','r', encoding='utf-8') as ressources2 :
+            classification = json.load(ressources2) # TODO : liste des classifications en fonction de la vitesse
+        
     except FileNotFoundError : 
         donnees = []
-        messagebox.showerror(title='ressources.json',message="Le fichier ressources.json n'a pas été trouvé ")
+        messagebox.showerror(title='ressources.json',message="Le fichier ressources.json ou classification.json n'a pas été trouvé ")
     except json.JSONDecodeError : 
         donnees = []
         messagebox.showerror(title='ressources.json',message="Echec dans la conversion du fichier")
@@ -93,7 +112,6 @@ def onGoingGame() :
         return
     #Gestion du début du jeu
     if (remainingTime >0):
-        score
         global donnees
         i = randint(0,len(donnees))
         proposition = donnees[i]
@@ -108,7 +126,10 @@ def startGame() :
     global score
     score = 0 #Réunitialisation du score
     userEntry.delete(0,END)
+    validationButton.config(state=ACTIVE)
     scoreLabel.config(text="Votre score est en cours de calcul... ")
+    classificationLabel.config(text="Votre niveau est en cours de calcul... ")
+    classificationDescrition.config(text="La description sera affiché à la fin du jeu")
     try : 
         onGoingGame_thread = threading.Thread(target=onGoingGame)
         onGoingGame_thread.start()
@@ -120,7 +141,7 @@ def startGame() :
 
 
 WIDTH = 900
-HEIGHT = 550
+HEIGHT = 620
 HEADER_WIDTH = 0.5 * WIDTH
 HEADER_HEIGHT = 0.25 * HEIGHT
 BODY_WIDTH = 0.5 * WIDTH
@@ -276,7 +297,8 @@ validationButton = Button(userFrame,
                           activebackground="white",
                           fg=color_primary,
                           activeforeground=color_primary,
-                          command= proposeOneElement
+                          command= proposeOneElement,
+                          state=DISABLED
                           )
 validationButton.pack(side=RIGHT)
 
@@ -299,7 +321,26 @@ scoreLabel = Label(bodyFrame,
                    bg= color_secondary,
                    fg="white"
                    )
-scoreLabel.pack(anchor=CENTER)
+scoreLabel.pack(pady= (10,10),anchor=CENTER)
+
+classificationLabel = Label(bodyFrame,
+                            text=f"Vous êtes de niveau : ", #! Changer le contenu en fonction pour afficher le niveau de l'utilisateur
+                            font=(general_font,11),
+                            bg=color_secondary,
+                            fg="white"
+                    )
+
+classificationLabel.pack(anchor=CENTER)
+
+classificationDescrition = Label(bodyFrame,
+                                 text="Desciption : ",
+                                 font=(general_font,11),
+                                 bg=color_secondary,
+                                 fg="white",
+                                 wraplength= 0.95 * BODY_WIDTH 
+                    )
+
+classificationDescrition.pack(anchor=CENTER)
 
 window.mainloop()
 
